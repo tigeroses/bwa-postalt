@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(GreeterDocs)
+project(Bwa-PostaltDocs)
 
 # ---- Dependencies ----
 
 include(../cmake/CPM.cmake)
 
-CPMAddPackage(NAME Greeter SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+CPMAddPackage(NAME Bwa-Postalt SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 CPMAddPackage(
   NAME MCSS
@@ -19,8 +19,8 @@ CPMAddPackage(
 # ---- Doxygen variables ----
 
 # set Doxyfile variables
-set(DOXYGEN_PROJECT_NAME Greeter)
-set(DOXYGEN_PROJECT_VERSION ${Greeter_VERSION})
+set(DOXYGEN_PROJECT_NAME Bwa-Postalt)
+set(DOXYGEN_PROJECT_VERSION ${Bwa-Postalt_VERSION})
 set(DOXYGEN_PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
 set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doxygen")
 

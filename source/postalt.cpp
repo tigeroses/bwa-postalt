@@ -1,10 +1,10 @@
-#include <greeter/greeter.h>
+#include <postalt/postalt.h>
 
-using namespace greeter;
+using namespace postalt;
 
-Greeter::Greeter(std::string _name) : name(_name) {}
+Postalt::Postalt(std::string _name) : name(_name) {}
 
-std::string Greeter::greet(LanguageCode lang) const {
+std::string Postalt::greet(LanguageCode lang) const {
   switch (lang) {
     default:
     case LanguageCode::EN:
