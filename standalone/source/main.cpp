@@ -1,51 +1,39 @@
-#include <postalt/postalt.h>
-//#include <postalt/version.h>
+/*
+ * File: main.cpp
+ * Created Data: 2020-9-25
+ * Author: fxzhao
+ * Contact: <zhaofuxiang@genomics.cn>
+ *
+ * Copyright (c) 2020 BGI
+ */
 
-#include <cxxopts.hpp>
+#include <postalt/postalt.h>
+#include <postalt/version.h>
+
+#include <CLI/CLI.hpp>
 #include <iostream>
 #include <string>
 #include <unordered_map>
-
-const std::unordered_map<std::string, postalt::LanguageCode> languages{
-    {"en", postalt::LanguageCode::EN},
-    {"de", postalt::LanguageCode::DE},
-    {"es", postalt::LanguageCode::ES},
-    {"fr", postalt::LanguageCode::FR},
-};
+// #include <spdlog/sinks/basic_file_sink.h>
+// #include <spdlog/spdlog.h>
 
 int main(int argc, char** argv) {
-  cxxopts::Options options(argv[0], "A program to welcome the world!");
+  CLI::App app{"Bwa-Postalt: Process sam data."};
+  app.footer("Bwa-Postalt version: " + POSTALT_VERSION);
+  app.get_formatter()->column_width(40);
 
-  std::string language;
-  std::string name;
+  std::string alt_filename;
+  app.add_option("alt file", alt_filename, "Position paramter")
+      ->check(CLI::ExistingFile)
+      ->required();
 
-  // clang-format off
-  options.add_options()
-    ("h,help", "Show help")
-    ("v,version", "Print the current version number")
-    ("n,name", "Name to greet", cxxopts::value(name)->default_value("World"))
-    ("l,lang", "Language code to use", cxxopts::value(language)->default_value("en"))
-  ;
-  // clang-format on
+  CLI11_PARSE(app, argc, argv);
 
-  auto result = options.parse(argc, argv);
-
-  if (result["help"].as<bool>()) {
-    std::cout << options.help() << std::endl;
-    return 0;
-  } else if (result["version"].as<bool>()) {
-    std::cout << "Postalt, version " << 0 << std::endl;
-    return 0;
-  }
-
-  auto langIt = languages.find(language);
-  if (langIt == languages.end()) {
-    std::cerr << "unknown language code: " << language << std::endl;
-    return 1;
-  }
-
-  postalt::Postalt postalt(name);
-  std::cout << postalt.greet(langIt->second) << std::endl;
+  postalt::Postalt postalt(alt_filename);
+  if (postalt.run())
+    std::cout << "Postalt run success!" << std::endl;
+  else
+    std::cout << "Postalt run fail!" << std::endl;
 
   return 0;
 }

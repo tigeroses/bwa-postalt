@@ -1,19 +1,22 @@
+/*
+ * File: postalt.cpp
+ * Created Data: 2020-9-25
+ * Author: fxzhao
+ * Contact: <zhaofuxiang@genomics.cn>
+ *
+ * Copyright (c) 2020 BGI
+ */
+
 #include <postalt/postalt.h>
+
+#include <iostream>
 
 using namespace postalt;
 
-Postalt::Postalt(std::string _name) : name(_name) {}
+Postalt::Postalt(std::string _alt_filename) : alt_filename(_alt_filename) {}
 
-std::string Postalt::greet(LanguageCode lang) const {
-  switch (lang) {
-    default:
-    case LanguageCode::EN:
-      return "Hello, " + name + "!";
-    case LanguageCode::DE:
-      return "Hallo " + name + "!";
-    case LanguageCode::ES:
-      return "¡Hola " + name + "!";
-    case LanguageCode::FR:
-      return "Bonjour " + name + "!";
-  }
+bool Postalt::run() const {
+  std::cout << "Running with alt file: " << alt_filename << std::endl;
+
+  return true;
 }

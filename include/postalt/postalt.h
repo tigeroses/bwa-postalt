@@ -1,31 +1,36 @@
+/*
+ * File: postalt.h
+ * Created Data: 2020-9-25
+ * Author: fxzhao
+ * Contact: <zhaofuxiang@genomics.cn>
+ *
+ * Copyright (c) 2020 BGI
+ */
+
 #pragma once
 
 #include <string>
 
 namespace postalt {
 
-  /**  Language codes to be used with the Postalt class */
-  enum class LanguageCode { EN, DE, ES, FR };
-
   /**
-   * @brief A class for saying hello in multiple languages
+   * @brief A class for processing alt data for sam file
    */
   class Postalt {
-    std::string name;
+    std::string alt_filename;
 
   public:
     /**
      * @brief Creates a new postalt
-     * @param name the name to greet
+     * @param alt_filename the name to alt file
      */
-    Postalt(std::string name);
+    Postalt(std::string alt_filename);
 
     /**
-     * @brief Creates a localized string containing the greeting
-     * @param lang the language to greet in
-     * @return a string containing the greeting
+     * @brief Run the main progress
+     * @return true if everything ok
      */
-    std::string greet(LanguageCode lang = LanguageCode::EN) const;
+    bool run() const;
   };
 
 }  // namespace postalt

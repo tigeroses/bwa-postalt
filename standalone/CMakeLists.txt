@@ -11,10 +11,9 @@ include(../cmake/tools.cmake)
 include(../cmake/CPM.cmake)
 
 CPMAddPackage(
-  NAME cxxopts
-  GITHUB_REPOSITORY jarro2783/cxxopts
-  VERSION 2.2.0
-  OPTIONS "CXXOPTS_BUILD_EXAMPLES Off" "CXXOPTS_BUILD_TESTS Off"
+  NAME CLI11
+  GITHUB_REPOSITORY CLIUtils/CLI11
+  VERSION 1.9.0
 )
 
 CPMAddPackage(NAME Bwa-Postalt SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
@@ -27,4 +26,4 @@ add_executable(Bwa-PostaltStandalone ${sources})
 
 set_target_properties(Bwa-PostaltStandalone PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "Bwa-Postalt")
 
-target_link_libraries(Bwa-PostaltStandalone Bwa-Postalt cxxopts)
+target_link_libraries(Bwa-PostaltStandalone Bwa-Postalt CLI11)
