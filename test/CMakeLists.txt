@@ -69,3 +69,8 @@ if(ENABLE_TEST_COVERAGE)
   target_compile_options(Bwa-Postalt PUBLIC -O0 -g -fprofile-arcs -ftest-coverage)
   target_link_options(Bwa-Postalt PUBLIC -fprofile-arcs -ftest-coverage)
 endif()
+
+# ---- Extra configuration ----
+target_link_libraries(Bwa-PostaltTests
+  -pthread
+)
