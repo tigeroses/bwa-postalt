@@ -27,3 +27,8 @@ add_executable(Bwa-PostaltStandalone ${sources})
 set_target_properties(Bwa-PostaltStandalone PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "Bwa-Postalt")
 
 target_link_libraries(Bwa-PostaltStandalone Bwa-Postalt CLI11)
+
+# ---- Extra configuration ----
+target_link_libraries(Bwa-PostaltStandalone
+  -pthread
+)

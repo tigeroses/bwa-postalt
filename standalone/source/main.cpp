@@ -1,6 +1,7 @@
 
 #include <postalt/postalt.h>
 #include <postalt/version.h>
+#include <postalt/workflow.h>
 
 #include <CLI/CLI.hpp>
 #include <iostream>
@@ -21,11 +22,16 @@ int main(int argc, char** argv) {
 
   CLI11_PARSE(app, argc, argv);
 
-  postalt::Postalt postalt(alt_filename);
-  if (postalt.run())
-    std::cout << "Postalt run success!" << std::endl;
-  else
-    std::cout << "Postalt run fail!" << std::endl;
+  // postalt::Postalt postalt(alt_filename);
+  // // if (postalt.run())
+  // //   std::cout << "Postalt run success!" << std::endl;
+  // // else
+  // //   std::cout << "Postalt run fail!" << std::endl;
+
+  // postalt.test_io();
+  
+  postalt::Workflow workflow(10, 100*1024*1024);
+  workflow.run();
 
   return 0;
 }

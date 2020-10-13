@@ -40,9 +40,8 @@ namespace postalt {
     private:
         /**
          * @brief Generate data
-         * @param data_num the number of test data
          */
-        void producer(int data_num);
+        void producer();
 
         /**
          * @brief Process data

@@ -9,8 +9,7 @@ namespace postalt {
    * @brief A class for processing alt data for sam file
    */
   class Postalt {
-    std::string alt_filename;
-
+   
   public:
     /**
      * @brief Creates a new postalt
@@ -23,6 +22,16 @@ namespace postalt {
      * @return true if everything ok
      */
     bool run() const;
+
+    /**
+     * @brief Read from stdin and write to stdout
+     */
+    void test_io() const;
+
+  private:
+    std::string m_alt_filename; ///< input alt file
+    int m_block_lines;  ///< the max line numbers of a single block
+
   };
 
 }  // namespace postalt
