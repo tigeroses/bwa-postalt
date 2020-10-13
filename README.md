@@ -1,30 +1,45 @@
 # Bwa-Postalt
 
-Speed up bwa-postalt.js 
+Use C++ multi-threading parallel to speed up bwa-postalt.js for processing sam data.
 
 ## Usage
 
 ### Build and run the standalone target
 
-Use the following command to build and run the executable target.
+Use the following command to build executable target.
 
 ```bash
+# ./script/build.sh
 cmake -Hstandalone -Bbuild/standalone
 cmake --build build/standalone
-./build/standalone/Postalt --help
 ```
+
+To run the executable target.
+
+```bash
+cat input.sam | ./build/standalone/Bwa-Postalt input.alt > output.sam
+```
+
+The program read sam data from stdin and write the sam data to stdout using pipelines of linux platform.
 
 ### Build and run test suite
 
 Use the following commands from the project's root directory to run the test suite.
 
 ```bash
+# ./script/test.sh
 cmake -Htest -Bbuild/test
 cmake --build build/test
-CTEST_OUTPUT_ON_FAILURE=1 cmake --build build/test --target test
 
-# or simply call the executable: 
-./build/test/PostaltTests
+if [[ $? == 0 ]];
+then
+    echo "Compile success!"
+    # CTEST_OUTPUT_ON_FAILURE=1 cmake --build build/test --target test
+    # or simply call the executable: 
+    ./build/test/Bwa-PostaltTests
+else
+    echo "Compile failed!"
+fi
 ```
 
 To collect code coverage information, run CMake with the `-DENABLE_TEST_COVERAGE=1` option.
@@ -35,30 +50,14 @@ The documentation is automatically built and [published](https://thelartians.git
 To manually build documentation, call the following command.
 
 ```bash
+# ./script/doc.sh
 cmake -Hdocumentation -Bbuild/doc
 cmake --build build/doc --target GenerateDocs
 # view the docs
-open build/doc/doxygen/html/index.html
+# open build/doc/doxygen/html/index.html
 ```
 
 To build the documentation locally, you will need Doxygen, jinja2 and Pygments on installed your system.
-
-### Build everything at once
-
-The project also includes an `all` directory that allows building all targets at the same time.
-This is useful during development, as it exposes all subprojects to your IDE and avoids redundant builds of the library.
-
-```bash
-cmake -Hall -Bbuild
-cmake --build build
-
-# run tests
-./build/test/PostaltTests
-# run standalone
-./build/standalone/Postalt --help
-# build docs
-cmake --build build --target GenerateDocs
-```
 
 ## Performance
 
