@@ -7,17 +7,18 @@
 #include <regex>
 #include <exception>
 #include <stdexcept>
+#include <algorithm>
 
 using namespace postalt;
 
 Altfile::Altfile(std::string file) :
     m_filename(file)
 {
-
 }
 
 void Altfile::parse()
 {
+    // Read alt file line by line
     std::ifstream ifs(m_filename);
     std::string line;
     while (std::getline(ifs, line))
@@ -75,4 +76,25 @@ void Altfile::parse()
     }
     ifs.close();
 
+    // Create index of overlap intervals
+    
+    for (auto& [ctg, intv] : m_intv_alt)
+        m_idx_alt[ctg] = intv_ovlp(intv);
+    for (auto& [ctg, intv] : m_intv_pri)
+        m_idx_pri[ctg] = intv_ovlp(intv);
+}
+
+std::unordered_set<std::string> Altfile::get_is_alt()
+{
+    return m_is_alt;
+}
+
+std::unordered_map<std::string, std::function<std::vector<IntvAlt>(int, int)>> Altfile::get_idx_alt()
+{
+    return m_idx_alt;
+}
+
+std::unordered_map<std::string, std::function<std::vector<IntvPri>(int, int)>> Altfile::get_idx_pri()
+{
+    return m_idx_pri;
 }

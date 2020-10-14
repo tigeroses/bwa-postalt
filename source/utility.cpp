@@ -15,3 +15,15 @@ std::vector< std::string > split_str(const std::string& str, char delim, bool sk
     return res;
 }
 
+std::string cat_str(std::vector<std::string>& l, char sep)
+{
+    std::stringstream ss;
+    for (size_t i = 0; i < l.size(); ++i)
+    {
+        ss << l[i];
+        if (i != (l.size()-1))
+            ss << sep;
+    }
+    return ss.str();
+}
+
