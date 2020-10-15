@@ -324,6 +324,7 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
 
     // Re-estimate mapping quality if necessary
     int mapQ, ori_mapQ = std::stoi(vec_s[4]);
+    // std::cerr<<"n_group0: "<<n_group0<<std::endl;
     if (n_group0 > 1)
     {
       std::unordered_map<int, int> tmp;
@@ -335,12 +336,16 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
       }
       std::vector<std::pair<int,int>> group_max;
       for (auto& [k,v] : tmp)
+      {
         group_max.push_back({k,v});
+        // std::cerr<<k<<" "<<v<<std::endl;
+      }
       if (group_max.size() > 1)
         std::sort(group_max.begin(), group_max.end(), [&](auto& a, auto& b){
           return a.first > b.first;
         });
-      if (group_max[0].second == reported_g)
+      // std::cerr<<group_max[0].second<<" "<<reported_g<<std::endl;
+      if (group_max[0].first == reported_g)
       {
         // The best hit is the hit reported in SAM
         mapQ = group_max.size() == 1 ? 60 : 6 * (group_max[0].first - group_max[1].first);
