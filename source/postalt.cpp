@@ -34,7 +34,7 @@ void Postalt::print_buffer(std::vector<std::vector<std::string>>& buff, std::str
 {
   if (buff.size() == 0) return;
   for (auto& b : buff)
-    out += cat_str(b);
+    out += cat_str(b, '\t', true);
 }
 
 auto Postalt::parse_hit(std::string& contig, bool reverse, int start, std::string& cigar,
@@ -131,6 +131,9 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
       outputs += line;
       continue;
     }
+
+    // Remove the endline
+    line.pop_back();
 
     std::vector<std::string> vec_s = split_str(line, '\t');
     int flag = std::stoi(vec_s[1]);

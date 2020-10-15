@@ -15,7 +15,7 @@ std::vector< std::string > split_str(const std::string& str, char delim, bool sk
     return res;
 }
 
-std::string cat_str(std::vector<std::string>& l, char sep)
+std::string cat_str(std::vector<std::string>& l, char sep, bool endline)
 {
     std::stringstream ss;
     for (size_t i = 0; i < l.size(); ++i)
@@ -24,6 +24,8 @@ std::string cat_str(std::vector<std::string>& l, char sep)
         if (i != (l.size()-1))
             ss << sep;
     }
+    if (endline)
+        ss << '\n';
     return ss.str();
 }
 

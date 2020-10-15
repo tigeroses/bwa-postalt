@@ -22,16 +22,23 @@ int main(int argc, char** argv) {
 
   CLI11_PARSE(app, argc, argv);
 
-  // postalt::Postalt postalt(alt_filename);
-  // // if (postalt.run())
-  // //   std::cout << "Postalt run success!" << std::endl;
-  // // else
-  // //   std::cout << "Postalt run fail!" << std::endl;
+  std::vector<std::string> inputs;
+  constexpr int line_size = 1024;
+  char buff[line_size];
+  while (NULL != fgets(buff, line_size, stdin))
+    inputs.push_back(buff);
+  std::cerr<<"input size: "<<inputs.size()<<std::endl;
+  
+  postalt::Postalt postalt(alt_filename);
+  std::string outputs;
+  postalt.run(inputs, outputs);
+  std::cout<<outputs;
+  
 
   // postalt.test_io();
   
-  postalt::Workflow workflow(10, 100*1024*1024);
-  workflow.run();
+  // postalt::Workflow workflow(10, 100*1024*1024);
+  // workflow.run();
 
   return 0;
 }

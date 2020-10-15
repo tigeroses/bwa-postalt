@@ -47,7 +47,7 @@ namespace postalt
     std::function<std::vector<T>(int,int)> intv_ovlp(std::vector<T>& intv, int bits)
     {
         std::sort(intv.begin(), intv.end(), [&](T& a, T& b){
-            return a.start - b.start;
+            return a.start < b.start;
         });
         // Create the index
         std::unordered_map<int, int> idx;
