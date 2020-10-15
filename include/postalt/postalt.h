@@ -34,6 +34,7 @@ namespace postalt {
     bool reverse;
     int start;
     int end;
+    std::string lifted_str;
     Lift() {}
     Lift(std::string ctg, bool rev, int s, int e):
       contig(ctg), reverse(rev), start(s), end(e) {}
@@ -54,6 +55,12 @@ namespace postalt {
     int score;
     int l_query;
     std::vector<Lift> lifted;
+    int i;  ///< the original index
+    std::string pctg;
+    int pstart;
+    int pend;
+    int g;
+    std::string lifted_str;
   };
 
   /**
@@ -107,12 +114,24 @@ namespace postalt {
      */
     int cigar2pos(std::vector<std::pair<char, int>>& cigar, int pos);
 
+    /**
+     * @brief Reverse complement a DNA string
+     */
+    void revcomp(std::string& s);
+
+    /** 
+     * @brief Reverse a string
+     */
+    void reverse(std::string& s);
+
   private:
     std::string m_alt_filename; ///< input alt file
 
     Option opt;
 
     Altfile *p_alt;
+
+    char m_rctab[256];  ///< reverse complement table
   };
 
 }  // namespace postalt

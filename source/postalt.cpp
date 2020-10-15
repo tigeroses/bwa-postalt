@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <regex>
+#include <unordered_map>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,14 @@ Postalt::Postalt(std::string alt_filename) :
   // Read and parse alt file
   p_alt = new Altfile(m_alt_filename);
   p_alt->parse();
+
+  // Construct reverse complement table
+  for (int i = 0; i < 256; ++i)
+    m_rctab[i] = 0;
+  std::string s1 = "WSATUGCYRKMBDHVNwsatugcyrkmbdhvn";
+  std::string s2 = "WSTAACGRYMKVHDBNwstaacgrymkvhdbn";
+  for (size_t i = 0; i < s1.size(); ++i)
+    m_rctab[static_cast<unsigned char>(s1.at(i))] = s2.at(i);
 }
 
 void Postalt::print_buffer(std::vector<std::vector<std::string>>& buff, std::string& out)
@@ -235,13 +244,258 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
         hits[i].lifted = std::move(lifted);
     }
 
+    // Prepare for hits grouping
+    for (size_t i = 0; i < hits.size(); ++i)
+    {
+      // Set keys for sorting
+      if (!hits[i].lifted.empty())
+      {
+        hits[i].pctg = hits[i].lifted[0].contig;
+        hits[i].pstart = hits[i].lifted[0].start;
+        hits[i].pend = hits[i].lifted[0].end;
+      }
+      else
+      {
+        hits[i].pctg = hits[i].ctg;
+        hits[i].pstart = hits[i].start;
+        hits[i].pend = hits[i].end;
+      }
+      hits[i].i = i;  // keep the original index
+    }
+
+    // Group hits based on the Lifted positions on non-ALT sequences
+    if (hits.size() > 1)
+    {
+      std::sort(hits.begin(), hits.end(), [&](Hit& a, Hit& b){
+        return a.pctg != b.pctg ? a.pctg < b.pctg : a.pstart < b.pstart;
+      });
+      std::string last_chr;
+      int end = 0, g = -1;
+      for (auto& h : hits)
+      {
+        if (last_chr != h.pctg)
+        {
+          ++g;
+          last_chr = h.pctg;
+          end = 0;
+        }
+        else if (h.pstart >= end)
+          ++g;
+        h.g = g;
+        end = std::max(end, h.pend);
+      }
+    }
+    else
+    {
+      hits[0].g = 0;
+    }
+
+    // Find the index and group id of the reported hit
+    // find the size of the reported group
+    int reported_g, reported_i, n_group0 = 0;
+    if (hits.size() > 1)
+    {
+      for (size_t i = 0; i < hits.size(); ++i)
+      {
+        if (hits[i].i == 0)
+        {
+          reported_g = hits[i].g;
+          reported_i = i;
+        }
+      }
+      for (auto& h : hits)
+        if (h.g == reported_g)
+          ++n_group0;
+    }
+    else
+    {
+      if (is_alt.count(hits[0].ctg) == 0)
+      {
+        // No need the go through the following if the single hit is non-ALT
+        buf2.push_back(std::move(vec_s));
+        continue;
+      }
+      reported_g = reported_i = 0;
+      n_group0 = 1;
+    }
+
+    // Re-estimate mapping quality if necessary
+    int mapQ, ori_mapQ = std::stoi(vec_s[4]);
+    if (n_group0 > 1)
+    {
+      std::unordered_map<int, int> tmp;
+      for (auto& h : hits)
+      {
+        int g = h.g;
+        if (tmp.count(g) == 0 || tmp[g] < h.score)
+          tmp[g] = h.score;
+      }
+      std::vector<std::pair<int,int>> group_max;
+      for (auto& [k,v] : tmp)
+        group_max.push_back({k,v});
+      if (group_max.size() > 1)
+        std::sort(group_max.begin(), group_max.end(), [&](auto& a, auto& b){
+          return a.first > b.first;
+        });
+      if (group_max[0].second == reported_g)
+      {
+        // The best hit is the hit reported in SAM
+        mapQ = group_max.size() == 1 ? 60 : 6 * (group_max[0].first - group_max[1].first);
+      }
+      else
+        mapQ = 0;
+      mapQ = std::min(mapQ, 60);
+      if (idx_alt.count(vec_s[2]) == 0)
+        mapQ = std::min(mapQ, ori_mapQ);
+      else
+        mapQ = std::max(mapQ, ori_mapQ);
+    }
+    else
+      mapQ = ori_mapQ;
+
+    /// TODO: Find out whether the read is overlapping HLA genes
+
+    // Adjust the mapQ of the primary hits
+    if (n_rpt_lifted <= 1)
+    {
+      Lift* l = n_rpt_lifted == 1 ? rpt_lifted : nullptr;
+      for (auto& s : buf2)
+      {
+        bool is_ovlp = true;
+        if (l != nullptr)
+        {
+          if (l->contig != s[2]) // different chr
+            is_ovlp = false;
+          else if (((std::stoi(s[1]) & 16) != 0) != l->reverse) // different strand
+            is_ovlp = false;
+          else
+          {
+            int start = std::stoi(s[3]) - 1, end = start;
+            std::regex cigar_regex(R"((\d+)([MIDSHN]))");
+            std::smatch cigar_match;
+            auto cigar_seq = vec_s[5];
+            while (std::regex_search(cigar_seq, cigar_match, cigar_regex))
+            {
+                // std::cout<<cigar_match[1]<<" "<<cigar_match[2]<<std::endl;
+                int len = std::stoi(cigar_match[1]);
+                auto c = cigar_match.str(2).at(0);
+                if (c == 'M' || c == 'D' || c == 'N')
+                  end += len;
+                // Get the unmatch string
+                cigar_seq = cigar_match.suffix();
+            }
+            if (!(start < l->end && l->start < end)) // no overlap
+              is_ovlp = false;
+          }
+        }
+        else
+          is_ovlp = false;
+        // Get the "pa" tag if present
+        int om = -1;
+        float pa = 10.0;
+        for (size_t j = 11; j < s.size(); ++j)
+        {
+          std::regex om_regex(R"(^om:i:(\d+))");
+          std::smatch om_match;
+          if (std::regex_search(s[j], om_match, om_regex))
+            om = std::stoi(om_match[1]);
+          else
+          {
+            std::regex pa_regex(R"(^pa:f:(\S+))");
+            std::smatch pa_match;
+            if (std::regex_search(s[j], pa_match, pa_regex))
+              om = std::stof(om_match[1]);
+          }
+        }
+        if (is_ovlp)
+        {
+          // overlapping the lifted hit
+          int tmp = std::stoi(s[4]);
+          if (om > 0)
+            tmp = om;
+          tmp = std::min(tmp, mapQ);
+          s[4] = std::to_string(tmp);
+        }
+        else if (pa < opt.min_pa_ratio)
+        {
+          // not overlapping; has a small pa
+          if (om < 0)
+            s.push_back("om:i:" + s[4]);
+          s[4] = "0";
+        }
+      }
+    }
+
+    // Generate lifted_str
+    for (auto& h : hits)
+    {
+      if (h.lifted.empty()) continue;
+      std::string u;
+      for (auto& lifted : h.lifted)
+        u += lifted.contig + "," + std::to_string(lifted.start) + "," +
+          std::to_string(lifted.end) + "," + (lifted.reverse ? "-" : "+") + ";";
+      h.lifted_str = u;
+    }
+
+    // Stage the reported hit
+    vec_s[4] = std::to_string(mapQ);
+    if (n_group0 > 1)
+      vec_s.push_back("om:i:" + std::to_string(ori_mapQ));
+    if (!hits[reported_i].lifted_str.empty())
+      vec_s.push_back("lt:Z:" + hits[reported_i].lifted_str);
+    buf2.push_back(vec_s);
+
+    // Stage the hits generated from the XA tag
+    std::string rs; // reverse quality
+    std::string rq; // reverse complement sequence
+    std::string rg;
+    std::regex re(R"(\tRG:Z:(\S+))");
+    std::smatch ma;
+    if (std::regex_search(line, ma, re))
+      rg = ma[1];
+    
+    for (int i = 0; i < static_cast<int>(hits.size()); ++i)
+    {
+      auto& h = hits[i];
+      if (h.g != reported_g || i == reported_i) continue;
+      if (idx_alt.count(h.ctg) == 0) continue;
+      std::vector<std::string> s{vec_s[0], "0", h.ctg, std::to_string(h.start+1),
+        std::to_string(mapQ), h.cigar, vec_s[6], vec_s[7], vec_s[8]};
+      if (vec_s[6] == "=" && s[2] != vec_s[2]) 
+        s[6] = vec_s[2];
+      // Print sequence/quality and set the rev flag
+      if (h.rev == hits[reported_i].rev)
+      {
+        s.push_back(vec_s[9]);
+        s.push_back(vec_s[10]);
+        s[1] = std::to_string(flag | 0x800);
+      }
+      else
+      {
+        // We need to write the reverse sequence
+        if (rs.empty() || rq.empty())
+        {
+          rs = vec_s[9];
+          revcomp(rs);
+          rq = vec_s[10];
+          reverse(rq);
+        }
+        s.push_back(rs);
+        s.push_back(rq);
+        s[1] = std::to_string((flag ^ 0x10) | 0x800);
+      }
+      s.push_back("NM:i:" + std::to_string(h.nm));
+      if (!h.lifted_str.empty())
+        s.push_back("lt:Z:" + h.lifted_str);
+      buf2.push_back(std::move(s));
+    }
 
     // Release memory
     if (rpt_lifted != nullptr)
       delete rpt_lifted;
   }
+  print_buffer(buf2, outputs);
 
-  
   return true;
 }
 
@@ -267,4 +521,17 @@ void Postalt::test_io() const
   // fclose(f);
 
   return;
+}
+
+void Postalt::revcomp(std::string& s)
+{
+  reverse(s);
+  std::for_each(s.begin(), s.end(), [&](char& c){
+    c = m_rctab[static_cast<unsigned char>(c)];
+  });
+}
+
+void Postalt::reverse(std::string& s)
+{
+  std::reverse(s.begin(), s.end());
 }
