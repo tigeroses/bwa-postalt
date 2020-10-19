@@ -9,6 +9,9 @@ project(
   LANGUAGES CXX
 )
 
+set(CMAKE_CXX_FLAGS "-O2 -DNDEBUG -W -Wall -pedantic -fopenmp -lpthread -lrt")
+
+
 # ---- Include guards ----
 
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)

@@ -3,7 +3,6 @@
 #include <postalt/utility.h>
 
 #include <iostream>
-#include <regex>
 #include <unordered_map>
 
 #include <stdio.h>
@@ -49,14 +48,10 @@ auto Postalt::parse_hit(std::string& contig, bool reverse, int start, std::strin
   // Process cigar info
   int l_ins, n_ins, l_del, n_del, l_match, l_skip, l_clip;
 	l_ins = l_del = n_ins = n_del = l_match = l_skip = l_clip = 0;
-  std::regex cigar_regex(R"((\d+)([MIDSHN]))");
-  std::smatch cigar_match;
-  auto cigar_seq = cigar;
-  while (std::regex_search(cigar_seq, cigar_match, cigar_regex))
+ 
+  auto cigar_pairs = parse_cigar(cigar);
+  for (auto& [l, c] : cigar_pairs)
   {
-    // std::cout<<cigar_match[1]<<" "<<cigar_match[2]<<std::endl;
-    int l = std::stoi(cigar_match[1]);
-    auto c = cigar_match.str(2).at(0);
     if (c == 'M') l_match += l;
     else if (c == 'D') ++n_del, l_del += l;
 		else if (c == 'I') ++n_ins, l_ins += l;
@@ -66,9 +61,6 @@ auto Postalt::parse_hit(std::string& contig, bool reverse, int start, std::strin
 			l_clip += l;
 			if (c == 'H') h.hard = true;
 		}
-    
-    // Get the unmatch string
-    cigar_seq = cigar_match.suffix();
   }
   h.end = h.start + l_match + l_del + l_skip;
   h.nm = std::max(NM, l_del + l_ins);
@@ -80,7 +72,8 @@ auto Postalt::parse_hit(std::string& contig, bool reverse, int start, std::strin
 
 auto Postalt::parse_hit(std::string& xa_str)
 {
-  auto vec_s = split_str(xa_str, ',');
+  std::vector<std::string> vec_s;
+  split_str(xa_str, vec_s, ',');
   bool reverse = vec_s[1].at(0) == '-';
   int start = std::stoi(vec_s[1].substr(1));
   return parse_hit(vec_s[0], reverse, start, vec_s[2], std::stoi(vec_s[3]));
@@ -122,9 +115,18 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
   auto idx_alt = p_alt->get_idx_alt();
 
   std::vector<std::vector<std::string>> buf2;
+
+  std::vector<std::string> xa_strs;
+  std::vector<std::string> vec_s;
+
   // Process SAM
+  int cnt = 0;
   for (auto& line : inputs)
   {
+    ++cnt;
+    if ((cnt % 100000) == 0)
+      std::cerr<<"processed records: "<<cnt<<std::endl;
+
     // Print and skip the header line
     if (line.at(0) == '@')
     {
@@ -134,8 +136,8 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
 
     // Remove the endline
     line.pop_back();
-
-    std::vector<std::string> vec_s = split_str(line, '\t');
+    
+    split_str(line, vec_s, '\t');
     int flag = std::stoi(vec_s[1]);
     
     // Print bufferred reads
@@ -156,14 +158,15 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
     }
 
     // Parse the reported hit
-    int NM = [&](){
-      std::regex re(R"(\tNM:i:(\d+))");
-      std::smatch ma;
-      if (std::regex_search(line, ma, re))
-        return std::stoi(ma[1]);
-      else
-        return 0;
-    }();
+    int NM = 0;
+    for (size_t j = 11; j < vec_s.size(); ++j)
+    {
+      if (vec_s[j].substr(0,5) == "NM:i:")
+      {
+        NM = std::stoi(vec_s[j].substr(5));
+        break;
+      }
+    }
     // 16 means reverse
     auto h = parse_hit(vec_s[2], (flag & 16), std::stoi(vec_s[3]), vec_s[5], NM);
     /// TODO: collect hla hits
@@ -177,15 +180,17 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
     std::vector<Hit> hits{1, h};
 
     // Parse hits in the XA tag e.g. XA:Z:chr1,-119614933,100M,1;
-    std::regex xa_regex(R"(\tXA:Z:(\S+))");
-    std::smatch xa_match;
-    if (std::regex_search(line, xa_match, xa_regex))
+    for (size_t j = 11; j < vec_s.size(); ++j)
     {
-      auto xa_strs = split_str(xa_match[1], ';');
-      for (auto& s : xa_strs)
-        hits.emplace_back(parse_hit(s));
+      if (vec_s[j].substr(0,5) == "XA:Z:")
+      {
+        split_str(vec_s[j].substr(5), xa_strs, ';');
+        for (auto& s : xa_strs)
+          hits.emplace_back(parse_hit(s));
+        break;
+      }
     }
-
+    
     // Check if there are ALT hits
     bool has_alt = false;
     for (auto& hit : hits)
@@ -295,7 +300,7 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
 
     // Find the index and group id of the reported hit
     // find the size of the reported group
-    int reported_g, reported_i, n_group0 = 0;
+    int reported_g = 0, reported_i = 0, n_group0 = 0;
     if (hits.size() > 1)
     {
       for (size_t i = 0; i < hits.size(); ++i)
@@ -341,14 +346,15 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
         // std::cerr<<k<<" "<<v<<std::endl;
       }
       if (group_max.size() > 1)
+        // Sort by score descending
         std::sort(group_max.begin(), group_max.end(), [&](auto& a, auto& b){
-          return a.first > b.first;
+          return a.second > b.second;
         });
-      // std::cerr<<group_max[0].second<<" "<<reported_g<<std::endl;
+      // std::cerr<<group_max[0].first<<" "<<reported_g<<std::endl;
       if (group_max[0].first == reported_g)
       {
         // The best hit is the hit reported in SAM
-        mapQ = group_max.size() == 1 ? 60 : 6 * (group_max[0].first - group_max[1].first);
+        mapQ = group_max.size() == 1 ? 60 : 6 * (group_max[0].second - group_max[1].second);
       }
       else
         mapQ = 0;
@@ -360,6 +366,8 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
     }
     else
       mapQ = ori_mapQ;
+
+    // std::cerr<<"mapq: "<<mapQ<<std::endl;
 
     /// TODO: Find out whether the read is overlapping HLA genes
 
@@ -379,18 +387,11 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
           else
           {
             int start = std::stoi(s[3]) - 1, end = start;
-            std::regex cigar_regex(R"((\d+)([MIDSHN]))");
-            std::smatch cigar_match;
-            auto cigar_seq = vec_s[5];
-            while (std::regex_search(cigar_seq, cigar_match, cigar_regex))
+            auto cigar_pairs = parse_cigar(vec_s[5]);
+            for (auto& [len, c] : cigar_pairs)
             {
-                // std::cout<<cigar_match[1]<<" "<<cigar_match[2]<<std::endl;
-                int len = std::stoi(cigar_match[1]);
-                auto c = cigar_match.str(2).at(0);
-                if (c == 'M' || c == 'D' || c == 'N')
-                  end += len;
-                // Get the unmatch string
-                cigar_seq = cigar_match.suffix();
+              if (c == 'M' || c == 'D' || c == 'N')
+                end += len;
             }
             if (!(start < l->end && l->start < end)) // no overlap
               is_ovlp = false;
@@ -403,16 +404,13 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
         float pa = 10.0;
         for (size_t j = 11; j < s.size(); ++j)
         {
-          std::regex om_regex(R"(^om:i:(\d+))");
-          std::smatch om_match;
-          if (std::regex_search(s[j], om_match, om_regex))
-            om = std::stoi(om_match[1]);
-          else
+          if (vec_s[j].substr(0,5) == "om:i:")
           {
-            std::regex pa_regex(R"(^pa:f:(\S+))");
-            std::smatch pa_match;
-            if (std::regex_search(s[j], pa_match, pa_regex))
-              om = std::stof(om_match[1]);
+            om = std::stoi(vec_s[j].substr(5));
+          }
+          else if (vec_s[j].substr(0,5) == "pa:f:")
+          {
+            pa = std::stof(vec_s[j].substr(5));
           }
         }
         if (is_ovlp)
@@ -457,10 +455,15 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
     std::string rs; // reverse quality
     std::string rq; // reverse complement sequence
     std::string rg;
-    std::regex re(R"(\tRG:Z:(\S+))");
-    std::smatch ma;
-    if (std::regex_search(line, ma, re))
-      rg = ma[1];
+    // std::smatch ma;
+    for (size_t j = 11; j < vec_s.size(); ++j)
+    {
+      if (vec_s[j].substr(0,5) == "RG:Z:")
+      {
+        rg = vec_s[j];
+        break;
+      }
+    }
     
     for (int i = 0; i < static_cast<int>(hits.size()); ++i)
     {
@@ -495,6 +498,8 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
       s.push_back("NM:i:" + std::to_string(h.nm));
       if (!h.lifted_str.empty())
         s.push_back("lt:Z:" + h.lifted_str);
+      if (!rg.empty())
+        s.push_back(rg);
       buf2.push_back(std::move(s));
     }
 

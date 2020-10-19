@@ -21,11 +21,12 @@ void Altfile::parse()
     // Read alt file line by line
     std::ifstream ifs(m_filename);
     std::string line;
+    std::vector<std::string> vec_s;
     while (std::getline(ifs, line))
     {
         // Skip the header section
         if (line.at(0) == '@') continue;
-        std::vector<std::string> vec_s = split_str(line, '\t');
+        split_str(line, vec_s, '\t');
         // Incomplete lines
         if (vec_s.size() < 11) continue;
         m_is_alt.insert(vec_s[0]);
