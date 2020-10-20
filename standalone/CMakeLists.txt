@@ -16,6 +16,12 @@ CPMAddPackage(
   VERSION 1.9.0
 )
 
+CPMAddPackage(
+  NAME spdlog
+  GITHUB_REPOSITORY gabime/spdlog
+  VERSION 1.5.0
+)
+
 CPMAddPackage(NAME Bwa-Postalt SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 # ---- Create standalone executable ----
@@ -26,7 +32,7 @@ add_executable(Bwa-PostaltStandalone ${sources})
 
 set_target_properties(Bwa-PostaltStandalone PROPERTIES CXX_STANDARD 17 OUTPUT_NAME "Bwa-Postalt")
 
-target_link_libraries(Bwa-PostaltStandalone Bwa-Postalt CLI11)
+target_link_libraries(Bwa-PostaltStandalone Bwa-Postalt CLI11 spdlog)
 
 # ---- Extra configuration ----
 target_link_libraries(Bwa-PostaltStandalone

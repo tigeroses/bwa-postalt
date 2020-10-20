@@ -11,7 +11,13 @@
 
 #include <cmath>
 
+#include <spdlog/spdlog.h>
+
 using namespace postalt;
+
+Postalt::Postalt()
+{
+}
 
 Postalt::Postalt(std::string alt_filename) : 
   m_alt_filename(alt_filename)
@@ -124,8 +130,8 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
   for (auto& line : inputs)
   {
     ++cnt;
-    if ((cnt % 100000) == 0)
-      std::cerr<<"processed records: "<<cnt<<std::endl;
+    if ((cnt % 1000000) == 0)
+      spdlog::info("Processed sam records: {}", cnt);
 
     // Print and skip the header line
     if (line.at(0) == '@')

@@ -33,6 +33,12 @@ CPMAddPackage(
   VERSION 1.3
 )
 
+# CPMAddPackage(
+#   NAME spdlog
+#   GITHUB_REPOSITORY gabime/spdlog
+#   VERSION 1.5.0
+# )
+
 # ---- Add source files ----
 
 # Note: globbing sources is considered bad practice as CMake's generators may not detect new files
@@ -53,7 +59,8 @@ set_target_properties(Bwa-Postalt PROPERTIES CXX_STANDARD 17)
 # being a cross-platform target, we enforce standards conformance on MSVC
 target_compile_options(Bwa-Postalt PUBLIC "$<$<BOOL:${MSVC}>:/permissive->")
 
-# Link dependencies (if required) target_link_libraries(Bwa-Postalt PUBLIC cxxopts)
+# Link dependencies (if required) 
+target_link_libraries(Bwa-Postalt PRIVATE spdlog)
 
 target_include_directories(
   Bwa-Postalt PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

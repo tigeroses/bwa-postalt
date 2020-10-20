@@ -71,6 +71,11 @@ namespace postalt {
   public:
     /**
      * @brief Creates a new postalt
+     */
+    Postalt();
+
+    /**
+     * @brief Creates a new postalt
      * @param alt_filename the name to alt file
      */
     Postalt(std::string alt_filename);
