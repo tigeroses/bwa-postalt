@@ -33,11 +33,13 @@ CPMAddPackage(
   VERSION 1.3
 )
 
-# CPMAddPackage(
-#   NAME spdlog
-#   GITHUB_REPOSITORY gabime/spdlog
-#   VERSION 1.5.0
-# )
+set(SPDLOG_INSTALL ON)
+
+CPMAddPackage(
+  NAME spdlog
+  GITHUB_REPOSITORY gabime/spdlog
+  VERSION 1.5.0
+)
 
 # ---- Add source files ----
 
@@ -60,7 +62,7 @@ set_target_properties(Bwa-Postalt PROPERTIES CXX_STANDARD 17)
 target_compile_options(Bwa-Postalt PUBLIC "$<$<BOOL:${MSVC}>:/permissive->")
 
 # Link dependencies (if required) 
-target_link_libraries(Bwa-Postalt PRIVATE spdlog)
+target_link_libraries(Bwa-Postalt PUBLIC spdlog)
 
 target_include_directories(
   Bwa-Postalt PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

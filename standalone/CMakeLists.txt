@@ -16,11 +16,11 @@ CPMAddPackage(
   VERSION 1.9.0
 )
 
-CPMAddPackage(
-  NAME spdlog
-  GITHUB_REPOSITORY gabime/spdlog
-  VERSION 1.5.0
-)
+# CPMAddPackage(
+#   NAME spdlog
+#   GITHUB_REPOSITORY gabime/spdlog
+#   VERSION 1.5.0
+# )
 
 CPMAddPackage(NAME Bwa-Postalt SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
