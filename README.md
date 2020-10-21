@@ -2,6 +2,19 @@
 
 Use C++ multi-threading parallel to speed up bwa-postalt.js for processing sam data.
 
+## Requirements
+
+OS: centos 7+  
+
+softwares/librarys:
+
+| name   | version | usage   |
+| ------ | ------- | ------- |
+| cmake  | 3.14+   | compile |
+| gcc    | 9.1.0+  | compile |
+| CLI11  | 1.9.0   | cmd     |
+| spdlog | 1.5.0   | log     |
+
 ## Usage
 
 ### Build and run the standalone target
