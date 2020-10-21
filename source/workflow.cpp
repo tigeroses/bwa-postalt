@@ -154,15 +154,15 @@ void Workflow::producer()
     Timer timer;
     constexpr int line_size = 1024;
     char buff[line_size];
-    int lines = 0;
+    size_t lines = 1;
     // Initialize the initial index using the first buffer index, it is must be empty
     int curr_index = 0;
     m_buffer_status->set(curr_index, BufferStatus::Occupied);
     while (NULL != fgets(buff, line_size, stdin))
-    {
-        // // std::cerr<<lines<<" "<<m_buffer_size<<std::endl;
-        if (lines == m_buffer_size)
+    {      
+        if ((lines % m_buffer_size) == 0)
         {
+            spdlog::info("Processed sam records: {}", lines);
             // The buffer is full, begin a new process task and find another empty buffer
             m_process_mutex.lock();
             m_process_orders.push(curr_index);
@@ -194,7 +194,6 @@ void Workflow::producer()
             m_buffer_status->set(curr_index, BufferStatus::Occupied);
             
             // std::cerr<<"next producer index: "<<curr_index<<std::endl;
-            lines = 0;
         }
         ++lines;
         // Add the new line to buffer

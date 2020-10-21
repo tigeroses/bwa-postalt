@@ -126,13 +126,8 @@ bool Postalt::run(std::vector<std::string>& inputs, std::string& outputs)
   std::vector<std::string> vec_s;
 
   // Process SAM
-  int cnt = 0;
   for (auto& line : inputs)
   {
-    ++cnt;
-    if ((cnt % 1000000) == 0)
-      spdlog::info("Processed sam records: {}", cnt);
-
     // Print and skip the header line
     if (line.at(0) == '@')
     {

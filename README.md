@@ -18,9 +18,33 @@ To run the executable target.
 
 ```bash
 cat input.sam | ./build/standalone/Bwa-Postalt input.alt > output.sam
+
+# or
+
+bwa mem -M -t 10 $ref $fq1 $fq2 | ./build/standalone/Bwa-Postalt input.alt > output
 ```
 
 The program read sam data from stdin and write the sam data to stdout using pipelines of linux platform.
+
+
+The detailed instructions are as follows.
+
+```bash
+$./build/standalone/Bwa-Postalt -h
+Bwa-Postalt: Process sam data.
+Usage: ./build/standalone/Bwa-Postalt [OPTIONS] alt file
+
+Positionals:
+  alt file TEXT:FILE REQUIRED           Position paramter
+
+Options:
+  -h,--help                             Print this help message and exit
+  -c INT:POSITIVE                       Core number, default detect
+  -b INT:POSITIVE                       Line number of single buffer, default 1M
+  --log TEXT                            Set logging path, default './logs'
+
+Bwa-Postalt version: 1.0.0
+```
 
 ### Build and run test suite
 
@@ -61,4 +85,20 @@ To build the documentation locally, you will need Doxygen, jinja2 and Pygments o
 
 ## Performance
 
-TODO
+Compare original JS script with C++ version
+
+```sh
+time cat $input_sam | Bwa-Postalt $alt -c 10 -b 1000000 > $output_sam
+
+
+time cat $input_sam | k8 bwa-postalt.js $alt > $output_sam
+```
+
+The size of input sam is 64GB, and the results:
+
+| version | time(s) | memory(MB) | CPU |
+| ------- | ------- | ---------- | --- |
+| js      | 4003    | 653        | 1   |
+| c++     | 268     | 7000       | 5   |
+
+This shows the speedup of c++ version is more than 10 times, and the bottleneck is speed of disk IO
