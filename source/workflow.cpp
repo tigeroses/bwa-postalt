@@ -152,13 +152,18 @@ bool Workflow::run(std::string alt_file)
 void Workflow::producer()
 {
     Timer timer;
-    constexpr int line_size = 1024;
-    char buff[line_size];
+    size_t line_size = 1024;
+    // char buff[line_size];
+    // std::string buff;
+    char *buff = NULL;
+    buff = (char*)malloc(line_size);
     size_t lines = 1;
     // Initialize the initial index using the first buffer index, it is must be empty
     int curr_index = 0;
     m_buffer_status->set(curr_index, BufferStatus::Occupied);
-    while (NULL != fgets(buff, line_size, stdin))
+    // while (NULL != fgets(buff, line_size, stdin))
+    // while (std::getline(std::cin, buff))
+    while ((getline(&buff, &line_size, stdin)) != -1)
     {      
         if ((lines % m_buffer_size) == 0)
         {
@@ -199,6 +204,7 @@ void Workflow::producer()
         // Add the new line to buffer
         m_raw_data[curr_index].emplace_back(buff);
     }
+    free(buff);
     // Do not forget the last block
     m_process_mutex.lock();
     m_process_orders.push(curr_index);

@@ -78,8 +78,10 @@ auto Postalt::parse_hit(std::string& contig, bool reverse, int start, std::strin
 
 auto Postalt::parse_hit(std::string& xa_str)
 {
+  spdlog::debug("xa_str: {}", xa_str);
   std::vector<std::string> vec_s;
   split_str(xa_str, vec_s, ',');
+  spdlog::debug("vec_s size: {}", vec_s.size());
   bool reverse = vec_s[1].at(0) == '-';
   int start = std::stoi(vec_s[1].substr(1));
   return parse_hit(vec_s[0], reverse, start, vec_s[2], std::stoi(vec_s[3]));
